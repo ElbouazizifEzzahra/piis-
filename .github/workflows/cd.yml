@@ -1,0 +1,119 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop   # → déploiement staging automatique
+      - main      # → déploiement production (avec approbation)
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/piis
+
+jobs:
+
+  # ─── BUILD & PUSH DOCKER IMAGES ────────────────────────
+  build-and-push:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [backend, ai-service, web-admin]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:latest
+
+  # ─── DEPLOY STAGING ────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/piis
+            docker compose pull
+            docker compose up -d --no-build
+            docker system prune -f
+
+  # ─── DEPLOY PRODUCTION ─────────────────────────────────
+  deploy-production:
+    name: Deploy to Production
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production   # ← requiert approbation manuelle sur GitHub
+
+    steps:
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/piis
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --no-build
+            docker system prune -f
+```
+
+---
+
+### Les secrets à configurer sur GitHub
+
+Va dans **Settings → Secrets and variables → Actions** de ton repo et ajoute :
+
+| Secret | Description |
+|---|---|
+| `STAGING_HOST` | IP ou domaine du serveur staging |
+| `STAGING_USER` | Utilisateur SSH staging |
+| `STAGING_SSH_KEY` | Clé SSH privée staging |
+| `PROD_HOST` | IP ou domaine du serveur prod |
+| `PROD_USER` | Utilisateur SSH prod |
+| `PROD_SSH_KEY` | Clé SSH privée prod |
+
+---
+
+### Flow complet résumé
+```
+dev push feature/* 
+    → pas de CI/CD déclenché
+
+PR vers develop
+    → CI déclenché (lint + tests tous les services)
+    → merge bloqué si CI échoue
+
+merge sur develop
+    → CI + CD staging (déploiement automatique)
+
+merge sur main
+    → CI + CD prod (nécessite approbation manuelle)
