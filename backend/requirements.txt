@@ -1,0 +1,36 @@
+# Core framework
+fastapi==0.110.0
+
+# ASGI server
+uvicorn[standard]==0.27.1
+
+# ORM (SQLAlchemy + Pydantic)
+sqlmodel==0.0.16
+
+# Environment variables
+python-dotenv==1.0.1
+
+# JWT authentication
+python-jose[cryptography]==3.3.0
+
+# Testing
+pytest==8.1.1
+httpx==0.27.0
+pytest-cov==4.1.0      # Generates test coverage reports
+pytest-env==1.1.3      # Easily set dummy environment variables for tests
+
+# Password hashing
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# Settings management (Pydantic v2 compatible)
+pydantic-settings==2.2.1
+
+# File upload handling
+python-multipart==0.0.6
+
+# Cloudinary for image storage
+cloudinary==1.36.0
+
+# driver for python to talk to postgresSQL 
+psycopg2-binary
