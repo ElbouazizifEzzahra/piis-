@@ -1,0 +1,30 @@
+# --- General ---
+.DS_Store
+.env
+*.log
+
+# --- Python / Backend ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+backend/.env
+
+# --- Web (React/Vite) ---
+web/node_modules/
+web/dist/
+web/.env
+
+# --- Mobile (Flutter) ---
+mobile/.dart_tool/
+mobile/build/
+mobile/.packages
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+
+# --- Docker ---
+.docker/
