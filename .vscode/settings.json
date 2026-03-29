@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "./ai-services/mock_",
+        "./ai-services/mock_",
+        "./backend/app"
+    ]
+}

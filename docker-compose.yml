@@ -1,5 +1,4 @@
 services:
-  # The Database Service
   db:
     image: postgres:15-alpine
     restart: always
@@ -10,7 +9,6 @@ services:
     env_file:
       - ./backend/.env
 
-  # The FastAPI Service
   backend:
     build: 
       context: ./backend
@@ -24,6 +22,17 @@ services:
       - ./backend/.env
     depends_on:
       - db
+
+  # ← ajouter seulement ça
+  ai-services:
+    build:
+      context: ./ai-services
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./ai-services:/app
+    ports:
+      - "8001:8001"
 
 volumes:
   postgres_data:
